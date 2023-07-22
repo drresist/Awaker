@@ -1,5 +1,7 @@
 # Awaker bot
 
+[![Python application](https://github.com/drresist/Awaker/actions/workflows/python-app.yml/badge.svg)](https://github.com/drresist/Awaker/actions/workflows/python-app.yml)
+
 Welcome to the Telegram Weather and Birthday Bot project! This Python script is designed to retrieve weather information for Moscow from the OpenWeatherMap API and notify users about birthdays from a CSV file.
 
 The bot will send a formatted message containing weather data and any upcoming birthdays to a specified chat using Telegram's Bot API.
