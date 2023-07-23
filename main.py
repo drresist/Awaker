@@ -86,11 +86,12 @@ def send_message(text: str) -> None:
 
 def main() -> None:
     while True:
-        try:
-            send_message(create_message())
-        except Exception as e:
-            logger.error(f"An error occurred: {e}")
-        time.sleep(3600)
+        if datetime.today().hour == 8:
+            try:
+                send_message(create_message())
+            except Exception as e:
+                logger.error(f"An error occurred: {e}")
+            time.sleep(3600)
 
 
 if __name__ == '__main__':
