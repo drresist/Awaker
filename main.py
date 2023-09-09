@@ -16,6 +16,11 @@ OW_API = os.getenv("OW_API")
 TG_BOT_API = os.getenv("TG_BOT_API")
 CHAT_ID = os.getenv("CHAT_ID")
 
+# Check that environment variables are set
+if not OW_API or not TG_BOT_API or not CHAT_ID:
+    raise ValueError
+
+
 logger.add("app.log", retention="10 days")  # Cleanup after some time
 
 
