@@ -1,0 +1,11 @@
+version: '3'
+services:
+  app:
+    build: .
+    environment:
+      - OW_API=${OW_API}
+      - TG_BOT_API=${TG_BOT_API}
+      - CHAT_ID=${CHAT_ID}
+    volumes:
+      - .:/app
+    restart: always
