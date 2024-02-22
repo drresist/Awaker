@@ -3,3 +3,4 @@ birthdays.csv
 .idea/
 app.log
 venv/
+.venv/
