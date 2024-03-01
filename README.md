@@ -1,42 +1,88 @@
-# Awaker bot
+# Weather and Birthday Bot
 
-[![Python application](https://github.com/drresist/Awaker/actions/workflows/python-app.yml/badge.svg)](https://github.com/drresist/Awaker/actions/workflows/python-app.yml)
+## Overview
 
-Welcome to the Telegram Weather and Birthday Bot project! This Python script is designed to retrieve weather information for Moscow from the OpenWeatherMap API and notify users about birthdays from a CSV file.
+The Weather and Birthday Bot is a Telegram bot designed to provide daily weather updates and birthday reminders. It fetches weather information using the OpenWeatherMap API and birthday data from a PostgreSQL database.
 
-The bot will send a formatted message containing weather data and any upcoming birthdays to a specified chat using Telegram's Bot API.
-Prerequisites
+## Features
 
-Before running the bot, make sure you have the following:
+- **Weather Updates:** Receive daily weather updates for Moscow, including temperature, feels-like temperature, weather description, and humidity.
 
-    Python (>= 3.6)
-    OpenWeatherMap API Key: Obtain an API key from OpenWeatherMap to access weather data.
-    Telegram Bot API Key: Create a Telegram bot and get the API token from BotFather.
-    Chat ID: Identify the chat ID where the bot will send messages. This can be your private chat ID or a group chat ID.
+- **Birthday Reminders:** Get notifications for birthdays stored in a PostgreSQL database.
 
-## Installation
+- **Telegram Integration:** Messages are sent to a specified Telegram channel at a scheduled time.
 
-Clone this repository to your local machine.
+## Table of Contents
 
-    git clone https://github.com/your-username/telegram-weather-bot.git
-Change into the project directory.
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Makefile Commands](#makefile-commands)
 
-    cd telegram-weather-bot
+## Prerequisites
 
-Install the required Python dependencies using pip.
+Before running the bot, ensure you have the following:
 
+- OpenWeatherMap API key
+- Telegram Bot API key and Chat ID
+- PostgreSQL database with a 'birthdays' table
+
+## Setup
+
+1. **Clone the Repository:**
+
+   ```bash
+   git clone https://github.com/yourusername/weather-birthday-bot.git
+   ```
+
+2. **Install Dependencies:**
+
+    ```bash
+    cd weather-birthday-bot
     pip install -r requirements.txt
+    ```
+3. **Set up Environment Variables:**
 
-Create a .env file in the project root and add your API keys and chat ID.
+    ```plaintext
+    OW_API=your_openweathermap_api_key
+    TG_BOT_API=your_telegram_bot_api_key
+    CHAT_ID=your_telegram_chat_id
+    PG_HOST=your_postgresql_host
+    PG_DB=your_postgresql_database
+    PG_USER=your_postgresql_user
+    PG_PASS=your_postgresql_password
+    ```
+4. **Run bot:**
+    ```bash
+    python3 main.py
+    ```
 
-    OW_API=YOUR_OPENWEATHERMAP_API_KEY
-    TG_BOT_API=YOUR_TELEGRAM_BOT_API_KEY
-    CHAT_ID=YOUR_CHAT_ID
+## Configuration
+
+* OW_API: OpenWeatherMap API key.
+* TG_BOT_API: Telegram Bot API key.
+* CHAT_ID: Telegram Chat ID.
+* PG_HOST, PG_DB, PG_USER, PG_PASS: PostgreSQL database connection details.
+* GIGA_AUTH_DATA: auth data for working with GigaChat SDK
 
 ## Usage
 
-To run the Telegram Weather and Birthday Bot, execute the main() function in the bot.py script.
+The bot is configured to send messages at 8:00 AM daily. Adjust the main function in bot.py if you want to change the schedule.
 
-    python bot.py
+## Makefile Commands
 
-The bot will start running and will send periodic messages to the specified chat with weather information and upcoming birthdays for the day.
+The project includes a Makefile to simplify common tasks:
+```bash
+# Initialize Virtual Environment:
+make init-venv
+
+# Install Requirements:
+make install-requirements
+
+# Run the Bot:
+make run
+
+# Clean Virtual Environment:
+make clean-venv
+```
