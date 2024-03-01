@@ -4,3 +4,4 @@ birthdays.csv
 app.log
 venv/
 .venv/
+__pycache__/*
