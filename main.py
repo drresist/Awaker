@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import psycopg2
 
+from giga_srv import get_weather_description
+
 # Load environment variables
 load_dotenv()
 
@@ -51,10 +53,12 @@ def get_weather() -> str | None:
     logger.info("Weather data received with status code: " + str(weather_data.status_code))
     
     if weather_data.status_code == 200:
+        logger.info(weather_data.json())
         weather_data = weather_data.json()
         text = f"Погода {icons[weather_data['weather'][0]['icon']]}: {int(weather_data['main']['temp'])}°C" \
-               f" (ощ. {int(weather_data['main']['feels_like'])}°C), " \
-               f"{weather_data['weather'][0]['description']}"
+               f" (ощущается как {int(weather_data['main']['feels_like'])}°C), " \
+               f"{weather_data['weather'][0]['description']}" \
+               f" Влажность {weather_data['main']['humidity']}"
         logger.info(text)
         return text
     else:
@@ -128,7 +132,7 @@ def create_message() -> str:
     weather = get_weather() or "Ошибка при получении погоды."
     # birthday = get_birthday() or "Сегодня нет дней рождения."
     birthday = get_birthdays_db() or ""
-
+    weather = get_weather_description(get_weather())
     return f"*Всем привет!👋*\n" \
            f"{weather}\n" \
            f"{birthday}\n"
@@ -155,7 +159,7 @@ def main() -> None:
                 send_message(create_message())
             except Exception as e:
                 logger.error(f"An error occurred: {e}")
-        # send_message(create_message())
+        send_message(create_message())
         # Sleep for a certain interval (e.g., 1 hour) before checking the time again
         # send_message(create_message())
         time.sleep(360)
