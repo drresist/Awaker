@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import psycopg2
 
+from giga_srv import get_weather_description
+
 
 class Config:
     def __init__(self):
@@ -19,7 +21,7 @@ class Config:
         self.PG_DB = os.getenv("PG_DB")
         self.PG_USER = os.getenv("PG_USER")
         self.PG_PASS = os.getenv("PG_PASS")
-
+        self.GIGA_TOGGLE = False
 
 def initialize_logger():
     logger.add("app.log", retention="10 days")
@@ -58,8 +60,8 @@ def get_weather() -> str | None:
         weather_data = weather_data.json()
         text = f"Погода {icons[weather_data['weather'][0]['icon']]}: {int(weather_data['main']['temp'])}°C" \
                f" (ощущается как {int(weather_data['main']['feels_like'])}°C), " \
-               f"{weather_data['weather'][0]['description']}" \
-               f" Влажность {weather_data['main']['humidity']}"
+               f"{weather_data['weather'][0]['description']}, " \
+               f"влажность: {weather_data['main']['humidity']}%"
         logger.info(text)
         return text
     else:
@@ -92,7 +94,11 @@ def get_birthdays_db() -> str | None:
 
 
 def create_message() -> str:
-    weather = get_weather() or "Ошибка при получении погоды."
+    config = initialize_config()
+    if config.GIGA_TOGGLE:
+        weather = get_weather_description(get_weather())
+    else:
+        weather = get_weather() or "Ошибка при получении погоды."
     birthday = get_birthdays_db() or ""
     return f"*Всем привет!👋*\n" \
            f"{weather}\n" \
@@ -116,7 +122,6 @@ def send_message(text: str) -> None:
 def main_loop():
     while True:
         current_time_utc3 = datetime.utcnow() + timedelta(hours=3)
-
         if current_time_utc3.hour == 8 and current_time_utc3.minute == 0:
             try:
                 send_message(create_message())

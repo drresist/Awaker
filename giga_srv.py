@@ -18,6 +18,8 @@ def get_weather_description(weather: str) -> str:
             model="GigaChat:latest"
         )
 
+
+
         # Load the prompt for text rewriting
         prompt = load_prompt("prompts/content/text_rewrite.yaml")
 
