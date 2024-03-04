@@ -5,7 +5,7 @@ import time
 from loguru import logger
 import requests
 import telebot
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import psycopg2
 
@@ -51,22 +51,55 @@ def get_weather() -> str | None:
     logger.info(f"Requesting weather data from OW")
 
     with open('icons.json', 'r', encoding='utf-8') as f:
-        icons = json.load(f)
+        icons_mapping = json.load(f)
 
     logger.info("Weather data received with status code: " + str(weather_data.status_code))
 
     if weather_data.status_code == 200:
         logger.info(weather_data.json())
         weather_data = weather_data.json()
-        text = f"Погода {icons[weather_data['weather'][0]['icon']]}: {int(weather_data['main']['temp'])}°C" \
-               f" (ощущается как {int(weather_data['main']['feels_like'])}°C), " \
-               f"{weather_data['weather'][0]['description']}, " \
-               f"влажность: {weather_data['main']['humidity']}%"
-        logger.info(text)
-        return text
+        # Extract relevant information
+        description = weather_data['weather'][0]['description']
+        icon_code = weather_data['weather'][0]['icon']
+        temperature = weather_data['main']['temp']
+        feels_like = weather_data['main']['feels_like']
+        humidity = weather_data['main']['humidity']
+        wind_speed = weather_data['wind']['speed']
+        pressure = weather_data['main']['pressure'] * 0.75  # Convert pressure to mmHg
+        sunrise_timestamp = weather_data['sys']['sunrise']
+        sunset_timestamp = weather_data['sys']['sunset']
+
+        # Convert timestamps to human-readable time in UTC
+        sunrise_utc = datetime.utcfromtimestamp(sunrise_timestamp)
+        sunset_utc = datetime.utcfromtimestamp(sunset_timestamp)
+
+        # Convert to Moscow time (UTC+3) by adding 3 hours
+        moscow_timezone = timezone(timedelta(hours=3))
+        sunrise_moscow = sunrise_utc.replace(tzinfo=timezone.utc).astimezone(moscow_timezone).strftime('%H:%M:%S')
+        sunset_moscow = sunset_utc.replace(tzinfo=timezone.utc).astimezone(moscow_timezone).strftime('%H:%M:%S')
+
+        # Get the icon for the current weather condition
+        weather_icon = icons_mapping.get(icon_code, '?')
+
+        # Format the text message
+        text_message = f'''
+Сейчас в городе {weather_data['name']}:
+
+{weather_icon} {description}
+
+🌡️ Температура воздуха — {temperature:.2f}°C
+👀 Чувствуется как — {feels_like:.1f}°C
+💦 Влажность — {humidity}%
+💨 Ветер — {wind_speed} м/с
+📍 Атмосферное давление — {pressure:.0f} мм рт.ст.
+
+🌅 Рассвет в {sunrise_moscow}
+🌆 Закат в {sunset_moscow}
+        '''
+        logger.info(text_message)
+        return text_message
     else:
         return None
-
 
 @log_error_and_continue
 def get_birthdays_db() -> str | None:

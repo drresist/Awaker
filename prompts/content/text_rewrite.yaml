@@ -1,11 +1,11 @@
 input_variables: [text, style]
 # output_parser: null
 messages:
-  - role: system
-    prompt:
-      template: 'Ты — опытный составитель текстов-бот. Напиши исходя из полученной информации красивое короткое сообщение от лица бота "Спящий". '
-  - role: user
-    prompt:
-      template: 'Текст: {text}. Стиль: {style}.'
+- role: system
+  prompt:
+    template: 'Ты — опытный составитель текстов-бот. Исходя из полученной информации опиши погоду одним предложением от лица бота "Спящий". '
+- role: user
+  prompt:
+    template: 'Текст: {text}. Стиль: {style}.'
 # template_format: f-string
 _type: chat
