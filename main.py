@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import psycopg2
 
 from giga_srv import get_weather_description
+import argparse
 
 
 class Config:
@@ -26,11 +27,9 @@ class Config:
 def initialize_logger():
     logger.add("app.log", retention="10 days")
 
-
 def initialize_config():
     load_dotenv()
     return Config()
-
 
 def log_error_and_continue(func):
     def wrapper(*args, **kwargs):
@@ -152,6 +151,16 @@ def send_message(text: str) -> None:
     )
 
 
+def parser_arguments():
+    parser = argparse.ArgumentParser(description='Weather and Birthday Bot')
+    parser.add_argument('--test', action='store_true', help='Enable testing mode')
+    parser.add_argument('--hour', type=int, default=8, help='Hour for sending messages (24-hour format)')
+    parser.add_argument('--minute', type=int, default=0, help='Minute for sending messages')
+
+    return parser.parse_args()
+
+
+
 def main_loop():
     while True:
         current_time_utc3 = datetime.utcnow() + timedelta(hours=3)
@@ -163,10 +172,21 @@ def main_loop():
 
         time.sleep(60)
 
+def test_app():
+    try:
+        send_message(create_message())
+        logger.info("Test message sent successfully.")
+    except Exception as e:
+        logger.error(f"An error occurred during testing: {e}")
 
 def main():
     initialize_logger()
-    main_loop()
+    args = parser_arguments()
+
+    if args.test:
+        test_app()
+    else:
+        main_loop()
 
 
 if __name__ == '__main__':
