@@ -5,3 +5,4 @@ app.log
 venv/
 .venv/
 __pycache__/*
+.vscode/settings.json
