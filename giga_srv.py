@@ -6,7 +6,7 @@ from loguru import logger
 
 logger.info(os.getenv('GIGA_AUTH_DATA'))
 
-def get_weather_description(weather: str) -> str:
+def get_hokku() -> str:
     try:
         GIGA_CLIENT = os.getenv('GIGA_AUTH_DATA')
 
@@ -28,8 +28,8 @@ def get_weather_description(weather: str) -> str:
 
         # Define the input data
         input_data = {
-            "text": f"Сегодня {date.today()}, Погода в Москве {weather}",
-            "style": "Письмо коллегам"
+            "text": "смешное хокку про IT",
+            "style": "шуточное хокку"
         }
 
         # Invoke the chain to get the rewritten content
