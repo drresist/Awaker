@@ -1,10 +1,8 @@
-from datetime import date
 from langchain.prompts import load_prompt
 from langchain.chat_models.gigachat import GigaChat
 import os
 from loguru import logger
 
-logger.info(os.getenv('GIGA_AUTH_DATA'))
 
 def get_hokku() -> str:
     try:

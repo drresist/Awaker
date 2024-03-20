@@ -1,4 +1,3 @@
-import csv
 from lxml import html
 import json
 import os
@@ -9,7 +8,7 @@ import telebot
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import psycopg2
-
+from holidays import get_holidays
 from giga_srv import get_hokku
 import argparse
 
@@ -17,13 +16,14 @@ import argparse
 class Config:
     def __init__(self):
         self.OW_API = os.getenv("OW_API")
-        self.TG_BOT_API = os.getenv("TG_BOT_API")
-        self.CHAT_ID = os.getenv("CHAT_ID")
+        self.TG_BOT_API = os.getenv("TG_BOT_API", "None")
+        self.CHAT_ID = os.getenv("CHAT_ID", "None")
         self.PG_HOST = os.getenv("PG_HOST")
         self.PG_DB = os.getenv("PG_DB")
         self.PG_USER = os.getenv("PG_USER")
         self.PG_PASS = os.getenv("PG_PASS")
         self.GIGA_TOGGLE = True
+        self.HOLIDAYS_URL = 'https://my-calend.ru/holidays'
 
 
 def initialize_logger():
@@ -52,7 +52,7 @@ def get_weather() -> str | None:
     url = f"http://api.openweathermap.org/data/2.5/weather?q=Moscow&appid={config.OW_API}&lang=ru&units=metric"
     weather_data = requests.get(url)
 
-    logger.info(f"Requesting weather data from OW")
+    logger.info("Requesting weather data from OW")
 
     with open("icons.json", "r", encoding="utf-8") as f:
         icons_mapping = json.load(f)
@@ -62,7 +62,6 @@ def get_weather() -> str | None:
     )
 
     if weather_data.status_code == 200:
-        logger.info(weather_data.json())
         weather_data = weather_data.json()
         # Extract relevant information
         description = weather_data["weather"][0]["description"]
@@ -72,26 +71,6 @@ def get_weather() -> str | None:
         humidity = weather_data["main"]["humidity"]
         wind_speed = weather_data["wind"]["speed"]
         pressure = weather_data["main"]["pressure"] * 0.75  # Convert pressure to mmHg
-        sunrise_timestamp = weather_data["sys"]["sunrise"]
-        sunset_timestamp = weather_data["sys"]["sunset"]
-
-        # Convert timestamps to human-readable time in UTC
-        sunrise_utc = datetime.utcfromtimestamp(sunrise_timestamp)
-        sunset_utc = datetime.utcfromtimestamp(sunset_timestamp)
-
-        # Convert to Moscow time (UTC+3) by adding 3 hours
-        moscow_timezone = timezone(timedelta(hours=3))
-        sunrise_moscow = (
-            sunrise_utc.replace(tzinfo=timezone.utc)
-            .astimezone(moscow_timezone)
-            .strftime("%H:%M:%S")
-        )
-        sunset_moscow = (
-            sunset_utc.replace(tzinfo=timezone.utc)
-            .astimezone(moscow_timezone)
-            .strftime("%H:%M:%S")
-        )
-
         # Get the icon for the current weather condition
         weather_icon = icons_mapping.get(icon_code, "?")
 
@@ -107,7 +86,6 @@ def get_weather() -> str | None:
 💨 Ветер — {wind_speed} м/с
 📍 Атмосферное давление — {pressure:.0f} мм рт.ст.
         """
-        logger.info(text_message)
         return text_message
     else:
         return None
@@ -132,50 +110,12 @@ def get_birthdays_db() -> str | None:
     birthday_list = [
         f"{birthday[1]}" for birthday in birthdays if birthday[0] == today_date
     ]
-    birthday_string = "\n".join(birthday_list)
     logger.info(f"Found {len(birthday_list)} birthdays")
 
     if not birthday_list:
         return ""
     return "День рождения у 🎂: \n" + "\n".join(birthday_list)
 
-
-def get_today_holidays(url):
-    # Fetch HTML content from the URL
-    response = requests.get(url)
-    if response.status_code == 200:
-        # Parse HTML content
-        tree = html.fromstring(response.content)
-        xpath = "/html/body/div[1]/main/div[1]/article/section[1]/ul/li"
-
-        # Get list of li elements based on the provided XPath
-        li_elements = tree.xpath(xpath)
-
-        # Create a dictionary to store the values
-        li_values = {}
-
-        # Iterate through each li element, extract the like value, and save it in the dictionary
-        for li_element in li_elements:
-            input_element = li_element.find("form/input")
-            if input_element is not None:
-                like_value = int(input_element.attrib["value"])
-                li_values[li_element] = like_value
-
-        # Sort the dictionary by like values
-        sorted_li_values = dict(
-            sorted(li_values.items(), key=lambda item: item[1], reverse=True)
-        )
-
-        # Retrieve text content for each li element
-        text_dict = {}
-        for li_element, like_count in sorted_li_values.items():
-            li_text = li_element.text_content().strip()
-            text_dict[li_text] = like_count
-        logger.info(text_dict)
-        return text_dict
-    else:
-        print("Failed to fetch HTML content from the URL.")
-        return None
 
 
 def create_message() -> str:
@@ -185,7 +125,8 @@ def create_message() -> str:
     else:
         weather = get_weather() or "Ошибка при получении погоды."
     birthday = get_birthdays_db() or ""
-    return f"*Всем привет!👋*\n" f"{weather}\n" f"{birthday}\n"
+    holidays = get_holidays(config.HOLIDAYS_URL) or ""
+    return f"*Всем привет!👋*\n {weather}\n {birthday}\n {holidays}\n"
 
 
 def send_message(text: str) -> None:
@@ -229,7 +170,6 @@ def main_loop():
 
 def test_app():
     try:
-        # get_today_holidays("https://my-calend.ru/holidays")
         send_message(create_message())
         logger.info("Test message sent successfully.")
     except Exception as e:
