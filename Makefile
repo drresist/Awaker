@@ -4,7 +4,10 @@ VENV_NAME := venv
 VENV_DIR := $(CURDIR)/$(VENV_NAME)
 REQUIREMENTS_FILE := requirements.txt
 
-.PHONY: init-venv install-requirements clean-venv
+.PHONY: init-venv install-requirements clean-venv freeze
+
+freeze:
+	pip freeze > requirements.txt
 
 init-venv:
 	python3 -m venv $(VENV_NAME)

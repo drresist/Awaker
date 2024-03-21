@@ -1,5 +1,5 @@
-from lxml import html
 import json
+import sys
 import os
 import time
 from loguru import logger
@@ -14,6 +14,20 @@ import argparse
 
 
 class Config:
+    """
+    Stores configuration settings for the application.
+
+    Attributes:
+        OW_API (str): The OpenWeather API key.
+        TG_BOT_API (str): The Telegram Bot API key. Defaults to "None".
+        CHAT_ID (str): The Telegram chat ID. Defaults to "None".
+        PG_HOST (str): The PostgreSQL host.
+        PG_DB (str): The PostgreSQL database name.
+        PG_USER (str): The PostgreSQL username.
+        PG_PASS (str): The PostgreSQL password.
+        GIGA_TOGGLE (bool): Toggle for Gigachain functionality. Defaults to True.
+        HOLIDAYS_URL (str): The URL for holiday data.
+    """
     def __init__(self):
         self.OW_API = os.getenv("OW_API")
         self.TG_BOT_API = os.getenv("TG_BOT_API", "None")
@@ -27,7 +41,16 @@ class Config:
 
 
 def initialize_logger():
-    logger.add("app.log", retention="10 days")
+    """
+    Initializes the logger configuration.
+
+    Adds log handlers for standard output with log level "INFO",
+    standard error with log level "ERROR", and a file named "logs/debug.log"
+    with log level "DEBUG".
+    """
+    logger.add(sys.stdout, level="INFO")
+    logger.add(sys.stderr, level="ERROR")
+    logger.add("logs/debug.log", level="DEBUG")
 
 
 def initialize_config():
@@ -36,6 +59,24 @@ def initialize_config():
 
 
 def log_error_and_continue(func):
+    """
+    Decorator that logs any exceptions that occur during the execution of the wrapped function
+    and allows the function to continue running.
+
+    Args:
+        func (callable): The function to be wrapped.
+
+    Returns:
+        callable: The decorated version of the function.
+
+    Example:
+        @log_error_and_continue
+        def divide(a, b):
+            return a / b
+
+        result = divide(10, 0)
+        # Logs an error and returns None
+    """
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -46,36 +87,36 @@ def log_error_and_continue(func):
     return wrapper
 
 
+
+# Assuming initialize_config and icons.json loading happens outside the function
+config = initialize_config()
+with open("icons.json", "r", encoding="utf-8") as f:
+    icons_mapping = json.load(f)
+
 @log_error_and_continue
 def get_weather() -> str | None:
-    config = initialize_config()
     url = f"http://api.openweathermap.org/data/2.5/weather?q=Moscow&appid={config.OW_API}&lang=ru&units=metric"
-    weather_data = requests.get(url)
-
     logger.info("Requesting weather data from OW")
 
-    with open("icons.json", "r", encoding="utf-8") as f:
-        icons_mapping = json.load(f)
+    with requests.get(url) as weather_response:
+        logger.info(f"Weather data received with status code: {weather_response.status_code}")
 
-    logger.info(
-        "Weather data received with status code: " + str(weather_data.status_code)
-    )
+        if weather_response.status_code != 200:
+            return None
+        weather_data = weather_response.json()
+        return format_weather_data(weather_data, icons_mapping)
 
-    if weather_data.status_code == 200:
-        weather_data = weather_data.json()
-        # Extract relevant information
-        description = weather_data["weather"][0]["description"]
-        icon_code = weather_data["weather"][0]["icon"]
-        temperature = weather_data["main"]["temp"]
-        feels_like = weather_data["main"]["feels_like"]
-        humidity = weather_data["main"]["humidity"]
-        wind_speed = weather_data["wind"]["speed"]
-        pressure = weather_data["main"]["pressure"] * 0.75  # Convert pressure to mmHg
-        # Get the icon for the current weather condition
-        weather_icon = icons_mapping.get(icon_code, "?")
+def format_weather_data(weather_data: dict, icons_mapping: dict) -> str:
+    description = weather_data["weather"][0]["description"]
+    icon_code = weather_data["weather"][0]["icon"]
+    temperature = weather_data["main"]["temp"]
+    feels_like = weather_data["main"]["feels_like"]
+    humidity = weather_data["main"]["humidity"]
+    wind_speed = weather_data["wind"]["speed"]
+    pressure = weather_data["main"]["pressure"] * 0.75  # Convert pressure to mmHg
+    weather_icon = icons_mapping.get(icon_code, "?")
 
-        # Format the text message
-        text_message = f"""
+    return f"""
 Сейчас в городе {weather_data['name']}:
 
 {weather_icon} {description}
@@ -85,14 +126,17 @@ def get_weather() -> str | None:
 💦 Влажность — {humidity}%
 💨 Ветер — {wind_speed} м/с
 📍 Атмосферное давление — {pressure:.0f} мм рт.ст.
-        """
-        return text_message
-    else:
-        return None
+    """
 
 
 @log_error_and_continue
 def get_birthdays_db() -> str | None:
+    """
+    Retrieves today's birthdays from the database and returns a formatted string.
+
+    Returns:
+        str | None: A string containing the birthdays if there are any, otherwise None.
+    """
     config = initialize_config()
     conn = psycopg2.connect(
         host=config.PG_HOST,
@@ -100,7 +144,7 @@ def get_birthdays_db() -> str | None:
         user=config.PG_USER,
         password=config.PG_PASS,
     )
-    today_date = f"{datetime.today().day}-{datetime.today().month}"
+    today_date = f"{datetime.now().day}-{datetime.now().month}"
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM birthdays")
     birthdays = cursor.fetchall()
@@ -119,6 +163,12 @@ def get_birthdays_db() -> str | None:
 
 
 def create_message() -> str:
+    """
+    Creates a message containing weather, birthdays, and holidays information.
+
+    Returns:
+        str: The formatted message.
+    """
     config = initialize_config()
     if config.GIGA_TOGGLE:
         weather = f"{get_weather()} \n*{get_hokku()}*"
@@ -129,7 +179,17 @@ def create_message() -> str:
     return f"*Всем привет!👋*\n {weather}\n {birthday}\n {holidays}\n"
 
 
+
 def send_message(text: str) -> None:
+    """
+    Sends a message using the Telegram Bot API.
+
+    Args:
+        text (str): The text of the message to send.
+
+    Returns:
+        None
+    """
     config = initialize_config()
     bot = telebot.TeleBot(token=config.TG_BOT_API)
 
@@ -143,7 +203,14 @@ def send_message(text: str) -> None:
     )
 
 
-def parser_arguments():
+
+def parser_arguments() -> argparse.Namespace:
+    """
+    Parses command-line arguments for the Weather and Birthday Bot.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
     parser = argparse.ArgumentParser(description="Weather and Birthday Bot")
     parser.add_argument("--test", action="store_true", help="Enable testing mode")
     parser.add_argument(
@@ -156,9 +223,12 @@ def parser_arguments():
     return parser.parse_args()
 
 
+    return parser.parse_args()
+
+
 def main_loop():
     while True:
-        current_time_utc3 = datetime.utcnow() + timedelta(hours=3)
+        current_time_utc3 = datetime.now(timezone.utc) + timedelta(hours=3)
         if current_time_utc3.hour == 8 and current_time_utc3.minute == 0:
             try:
                 send_message(create_message())
