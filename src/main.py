@@ -161,7 +161,6 @@ def get_birthdays_db() -> str | None:
     return "День рождения у 🎂: \n" + "\n".join(birthday_list)
 
 
-
 def create_message() -> str:
     """
     Creates a message containing weather, birthdays, and holidays information.
@@ -170,12 +169,9 @@ def create_message() -> str:
         str: The formatted message.
     """
     config = initialize_config()
-    if config.GIGA_TOGGLE:
-        weather = f"{get_weather()} \n*{get_hokku()}*"
-    else:
-        weather = get_weather() or "Ошибка при получении погоды."
-    birthday = get_birthdays_db() or ""
-    holidays = get_holidays(config.HOLIDAYS_URL) or ""
+    weather = f"{get_weather()} \n*{get_hokku()}*" if config.GIGA_TOGGLE else get_weather() or "Ошибка при получении погоды."
+    birthday = get_birthdays_db() if (birthdays := get_birthdays_db()) else ""
+    holidays = get_holidays(config.HOLIDAYS_URL) if (holidays := get_holidays(config.HOLIDAYS_URL)) else ""
     return f"*Всем привет!👋*\n {weather}\n {birthday}\n {holidays}\n"
 
 
@@ -239,11 +235,18 @@ def main_loop():
 
 
 def test_app():
+    """
+    Tests the application by sending a test message.
+
+    Raises:
+        Exception: If an error occurs during testing.
+    """
     try:
         send_message(create_message())
         logger.info("Test message sent successfully.")
     except Exception as e:
         logger.error(f"An error occurred during testing: {e}")
+
 
 
 def main():
