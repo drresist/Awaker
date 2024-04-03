@@ -1,14 +1,13 @@
-from logging import log
 import requests
 from loguru import logger
 from lxml import html
 
+
 def get_holidays(url):
-    #url = 'https://my-calend.ru/holidays'
     html_content = requests.get(url).content
     tree = html.fromstring(html_content)
 
-# Extract holiday information
+    # Extract holiday information
     holidays = []
     for li_element in tree.xpath('/html/body/div[1]/main/div[1]/article/section[1]/ul/li'):
         holiday_info = {}
@@ -17,8 +16,8 @@ def get_holidays(url):
         holiday_info['name'] = holiday_name
         holiday_info['likes'] = int(likes)
         holidays.append(holiday_info)
-        
-    sorted_holidays : list[dict] = sorted(holidays, key=lambda x: x['likes'], reverse=True)
+
+    sorted_holidays: list[dict] = sorted(holidays, key=lambda x: x['likes'], reverse=True)
     logger.info(sorted_holidays)
     logger.info(f'Get from {url} {len(sorted_holidays)} holidays')
 
