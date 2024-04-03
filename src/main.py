@@ -25,9 +25,12 @@ class Config:
         PG_DB (str): The PostgreSQL database name.
         PG_USER (str): The PostgreSQL username.
         PG_PASS (str): The PostgreSQL password.
-        GIGA_TOGGLE (bool): Toggle for Gigachain functionality. Defaults to True.
+        GIGA_TOGGLE (bool): Toggle for Gigachain functionality. Defaults to False.
+        JOKE_TOGGLE (bool): Toggle for joke functionality. Defaults to False.
+        HOLIDAYS_TOGGLE (bool): Toggle for holidays functionality. Defaults to False.
         HOLIDAYS_URL (str): The URL for holiday data.
     """
+
     def __init__(self):
         self.OW_API = os.getenv("OW_API")
         self.TG_BOT_API = os.getenv("TG_BOT_API", "None")
@@ -36,7 +39,9 @@ class Config:
         self.PG_DB = os.getenv("PG_DB")
         self.PG_USER = os.getenv("PG_USER")
         self.PG_PASS = os.getenv("PG_PASS")
-        self.GIGA_TOGGLE = True
+        self.GIGA_TOGGLE = False
+        self.JOKE_TOGGLE = False
+        self.HOLIDAYS_TOGGLE = False
         self.HOLIDAYS_URL = 'https://my-calend.ru/holidays'
 
 
@@ -77,6 +82,7 @@ def log_error_and_continue(func):
         result = divide(10, 0)
         # Logs an error and returns None
     """
+
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -87,11 +93,11 @@ def log_error_and_continue(func):
     return wrapper
 
 
-
 # Assuming initialize_config and icons.json loading happens outside the function
 config = initialize_config()
 with open("icons.json", "r", encoding="utf-8") as f:
     icons_mapping = json.load(f)
+
 
 @log_error_and_continue
 def get_weather() -> str | None:
@@ -105,6 +111,7 @@ def get_weather() -> str | None:
             return None
         weather_data = weather_response.json()
         return format_weather_data(weather_data, icons_mapping)
+
 
 def format_weather_data(weather_data: dict, icons_mapping: dict) -> str:
     description = weather_data["weather"][0]["description"]
@@ -161,6 +168,26 @@ def get_birthdays_db() -> str | None:
     return "День рождения у 🎂: \n" + "\n".join(birthday_list)
 
 
+@log_error_and_continue
+def get_joke() -> str | None:
+    """
+    Retrieves a random joke from the specified URL.
+
+    Returns:
+        str | None: The content of the joke if successful, otherwise None.
+    """
+    url = "https://jokesrv.fermyon.app/"
+    logger.info("Requesting joke data")
+
+    with requests.get(url) as joke_response:
+        logger.info(f"Joke data received with status code: {joke_response.status_code}")
+
+        if joke_response.status_code != 200:
+            return None
+        joke_data = joke_response.json()
+        return joke_data["content"]
+
+
 def create_message() -> str:
     """
     Creates a message containing weather, birthdays, and holidays information.
@@ -168,12 +195,17 @@ def create_message() -> str:
     Returns:
         str: The formatted message.
     """
-    config = initialize_config()
-    weather = f"{get_weather()} \n*{get_hokku()}*" if config.GIGA_TOGGLE else get_weather() or "Ошибка при получении погоды."
+    weather = get_weather() or "Ошибка при получении погоды."
     birthday = get_birthdays_db() if (birthdays := get_birthdays_db()) else ""
-    holidays = get_holidays(config.HOLIDAYS_URL) if (holidays := get_holidays(config.HOLIDAYS_URL)) else ""
-    return f"*Всем привет!👋*\n {weather}\n {birthday}\n {holidays}\n"
+    holidays = get_holidays(config.HOLIDAYS_URL) if config.HOLIDAYS_TOGGLE and (holidays := get_holidays(config.HOLIDAYS_URL)) else ""
 
+    additional_content = ""
+    if config.GIGA_TOGGLE:
+        additional_content = f"\n*{get_hokku()}*"
+    elif config.JOKE_TOGGLE:
+        additional_content = f"\n*{get_joke()}*"
+
+    return f"*Всем привет!👋*\n {weather}\n {birthday}\n {holidays}{additional_content}\n"
 
 
 def send_message(text: str) -> None:
@@ -186,7 +218,6 @@ def send_message(text: str) -> None:
     Returns:
         None
     """
-    config = initialize_config()
     bot = telebot.TeleBot(token=config.TG_BOT_API)
 
     logger.info(f"Sending message {text}")
@@ -197,7 +228,6 @@ def send_message(text: str) -> None:
         disable_notification=True,
         parse_mode="markdown",
     )
-
 
 
 def parser_arguments() -> argparse.Namespace:
@@ -215,11 +245,31 @@ def parser_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--minute", type=int, default=0, help="Minute for sending messages"
     )
-
+    parser.add_argument("--hokku", action="store_true", help="Enable hokku functionality")
+    parser.add_argument("--joke", action="store_true", help="Enable joke functionality")
+    parser.add_argument("--holidays", action="store_true", help="Enable holidays functionality")
     return parser.parse_args()
 
 
-    return parser.parse_args()
+def test_app(args):
+    """
+    Tests the application by sending a test message.
+
+    Args:
+        args (argparse.Namespace): Parsed command-line arguments.
+
+    Raises:
+        Exception: If an error occurs during testing.
+    """
+    config.GIGA_TOGGLE = args.hokku
+    config.JOKE_TOGGLE = args.joke
+    config.HOLIDAYS_TOGGLE = args.holidays
+
+    try:
+        send_message(create_message())
+        logger.info("Test message sent successfully.")
+    except Exception as e:
+        logger.error(f"An error occurred during testing: {e}")
 
 
 def main_loop():
@@ -234,28 +284,16 @@ def main_loop():
         time.sleep(60)
 
 
-def test_app():
-    """
-    Tests the application by sending a test message.
-
-    Raises:
-        Exception: If an error occurs during testing.
-    """
-    try:
-        send_message(create_message())
-        logger.info("Test message sent successfully.")
-    except Exception as e:
-        logger.error(f"An error occurred during testing: {e}")
-
-
-
 def main():
     initialize_logger()
     args = parser_arguments()
 
     if args.test:
-        test_app()
+        test_app(args)
     else:
+        config.GIGA_TOGGLE = args.hokku
+        config.JOKE_TOGGLE = args.joke
+        config.HOLIDAYS_TOGGLE = args.holidays
         main_loop()
 
 
