@@ -1,49 +1,20 @@
-import json
+import argparse
 import sys
-import os
 import time
-from loguru import logger
+from datetime import datetime, timedelta, timezone
+
+import psycopg2
 import requests
 import telebot
-from datetime import datetime, timedelta, timezone
-from dotenv import load_dotenv
-import psycopg2
-from holidays import get_holidays
+from loguru import logger
+
 from giga_srv import get_hokku
-import argparse
+from holidays import get_holidays
+from utils import initialize_config
+from weather import get_weather, generate_image
 
 
-class Config:
-    """
-    Stores configuration settings for the application.
-
-    Attributes:
-        OW_API (str): The OpenWeather API key.
-        TG_BOT_API (str): The Telegram Bot API key. Defaults to "None".
-        CHAT_ID (str): The Telegram chat ID. Defaults to "None".
-        PG_HOST (str): The PostgreSQL host.
-        PG_DB (str): The PostgreSQL database name.
-        PG_USER (str): The PostgreSQL username.
-        PG_PASS (str): The PostgreSQL password.
-        GIGA_TOGGLE (bool): Toggle for Gigachain functionality. Defaults to False.
-        JOKE_TOGGLE (bool): Toggle for joke functionality. Defaults to False.
-        HOLIDAYS_TOGGLE (bool): Toggle for holidays functionality. Defaults to False.
-        HOLIDAYS_URL (str): The URL for holiday data.
-    """
-
-    def __init__(self):
-        self.OW_API = os.getenv("OW_API")
-        self.TG_BOT_API = os.getenv("TG_BOT_API", "None")
-        self.CHAT_ID = os.getenv("CHAT_ID", "None")
-        self.PG_HOST = os.getenv("PG_HOST")
-        self.PG_DB = os.getenv("PG_DB")
-        self.PG_USER = os.getenv("PG_USER")
-        self.PG_PASS = os.getenv("PG_PASS")
-        self.GIGA_TOGGLE = False
-        self.JOKE_TOGGLE = False
-        self.HOLIDAYS_TOGGLE = False
-        self.HOLIDAYS_URL = 'https://my-calend.ru/holidays'
-
+config = initialize_config()
 
 def initialize_logger():
     """
@@ -53,14 +24,9 @@ def initialize_logger():
     standard error with log level "ERROR", and a file named "logs/debug.log"
     with log level "DEBUG".
     """
-    logger.add(sys.stdout, level="INFO")
-    logger.add(sys.stderr, level="ERROR")
+    # logger.add(sys.stdout, level="INFO")
+    # logger.add(sys.stderr, level="ERROR")
     logger.add("logs/debug.log", level="DEBUG")
-
-
-def initialize_config():
-    load_dotenv()
-    return Config()
 
 
 def log_error_and_continue(func):
@@ -91,49 +57,6 @@ def log_error_and_continue(func):
             return None
 
     return wrapper
-
-
-# Assuming initialize_config and icons.json loading happens outside the function
-config = initialize_config()
-with open("icons.json", "r", encoding="utf-8") as f:
-    icons_mapping = json.load(f)
-
-
-@log_error_and_continue
-def get_weather() -> str | None:
-    url = f"http://api.openweathermap.org/data/2.5/weather?q=Moscow&appid={config.OW_API}&lang=ru&units=metric"
-    logger.info("Requesting weather data from OW")
-
-    with requests.get(url) as weather_response:
-        logger.info(f"Weather data received with status code: {weather_response.status_code}")
-
-        if weather_response.status_code != 200:
-            return None
-        weather_data = weather_response.json()
-        return format_weather_data(weather_data, icons_mapping)
-
-
-def format_weather_data(weather_data: dict, icons_mapping: dict) -> str:
-    description = weather_data["weather"][0]["description"]
-    icon_code = weather_data["weather"][0]["icon"]
-    temperature = weather_data["main"]["temp"]
-    feels_like = weather_data["main"]["feels_like"]
-    humidity = weather_data["main"]["humidity"]
-    wind_speed = weather_data["wind"]["speed"]
-    pressure = weather_data["main"]["pressure"] * 0.75  # Convert pressure to mmHg
-    weather_icon = icons_mapping.get(icon_code, "?")
-
-    return f"""
-Сейчас в городе {weather_data['name']}:
-
-{weather_icon} {description}
-
-🌡️ Температура воздуха — {temperature:.2f}°C
-👀 Чувствуется как — {feels_like:.1f}°C
-💦 Влажность — {humidity}%
-💨 Ветер — {wind_speed} м/с
-📍 Атмосферное давление — {pressure:.0f} мм рт.ст.
-    """
 
 
 @log_error_and_continue
@@ -196,8 +119,10 @@ def create_message() -> str:
         str: The formatted message.
     """
     weather = get_weather() or "Ошибка при получении погоды."
+    generate_image(weather)
     birthday = get_birthdays_db() if (birthdays := get_birthdays_db()) else ""
-    holidays = get_holidays(config.HOLIDAYS_URL) if config.HOLIDAYS_TOGGLE and (holidays := get_holidays(config.HOLIDAYS_URL)) else ""
+    holidays = get_holidays(config.HOLIDAYS_URL) if config.HOLIDAYS_TOGGLE and (
+        holidays := get_holidays(config.HOLIDAYS_URL)) else ""
 
     additional_content = ""
     if config.GIGA_TOGGLE:
@@ -285,6 +210,7 @@ def main_loop():
 
 
 def main():
+    config = initialize_config()
     initialize_logger()
     args = parser_arguments()
 
