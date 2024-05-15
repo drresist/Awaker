@@ -196,7 +196,7 @@ def create_message() -> str:
         str: The formatted message.
     """
     weather = get_weather() or "Ошибка при получении погоды."
-    birthday = get_birthdays_db() if (birthdays := get_birthdays_db()) else ""
+    birthday = get_birthdays_db() if (_birthdays := get_birthdays_db()) else ""
     holidays = get_holidays(config.HOLIDAYS_URL) if config.HOLIDAYS_TOGGLE and (holidays := get_holidays(config.HOLIDAYS_URL)) else ""
 
     additional_content = ""

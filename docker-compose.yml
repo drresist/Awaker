@@ -1,0 +1,11 @@
+version: '3'
+services:
+  app:
+    build: .
+    restart: always
+    environment:
+      - PG_HOST=${PG_HOST}
+      - TG_BOT_API=${TG_BOT_API}
+      - PG_USER=${PG_USER}
+      - PG_PASS=${PG_PASS}
+      - PG_DB=${PG_DB}
