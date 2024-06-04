@@ -10,3 +10,5 @@ __pycache__/giga_srv.cpython-311.pyc
 src/__pycache__/giga_srv.cpython-311.pyc
 src/__pycache__/holidays.cpython-311.pyc
 logs/debug.log
+weather.png
+src/__pycache__/*
