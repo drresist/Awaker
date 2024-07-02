@@ -1,11 +1,5 @@
-input_variables: [text, style]
-# output_parser: null
-messages:
-- role: system
-  prompt:
-    template: 'Ты — опытный составитель хокку. Придумай хокку про IT и техническую поддержку'
-- role: user
-  prompt:
-    template: 'Текст: {text}. Стиль: {style}.'
-# template_format: f-string
-_type: chat
+input_variables: [background, topic]
+output_parser: null
+template: 'Придумай короткий и интересный текст для сеанса медитации. Медитирующий будет слышать {background}. Тема медитации — {topic}. Текст должен быть расслабляющий и успокаивающий. Не пиши никаких пояснений к тексту.'
+template_format: f-string
+_type: prompt

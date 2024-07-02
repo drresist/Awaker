@@ -21,11 +21,11 @@ def get_hokku() -> str:
             scope="GIGACHAT_API_PERS",
             model="GigaChat:latest"
         )
-        prompt = load_prompt("../prompts/content/text_rewrite.yaml")
+        prompt = load_prompt("prompts/content/text_rewrite.yaml")
         chat_chain = prompt | chat
         input_data = {
-            "text": "смешное хокку про IT",
-            "style": "шуточное хокку"
+            "background": "шум серверной",
+            "topic": "работа в ИТ"
         }
         content = chat_chain.invoke(input_data).content
         logger.info(content)

@@ -2,51 +2,45 @@ import json
 from utils import log_error_and_continue, initialize_config
 from loguru import logger
 import requests
-from PIL import Image,  ImageDraw, ImageFont
-
+from PIL import Image, ImageDraw, ImageFont
 
 # Assuming initialize_config and icons.json loading happens outside the function
 config = initialize_config()
 with open("icons.json", "r", encoding="utf-8") as f:
     icons_mapping = json.load(f)
 
-
-@log_error_and_continue
 def get_weather() -> str | None:
-    url = f"http://api.openweathermap.org/data/2.5/weather?q=Moscow&appid={config.OW_API}&lang=ru&units=metric"
+    url = f"http://api.openweathermap.org/data/2.5/forecast?q=Moscow&appid={config.OW_API}&lang=ru&units=metric"
     logger.info("Requesting weather data from OW")
 
-    with requests.get(url) as weather_response:
-        logger.info(f"Weather data received with status code: {weather_response.status_code}")
+    weather_response = requests.get(url)
+    logger.info(f"Weather data received with status code: {weather_response.status_code}")
 
-        if weather_response.status_code != 200:
-            return None
-        weather_data = weather_response.json()
-        return format_weather_data(weather_data, icons_mapping)
-
+    if weather_response.status_code != 200:
+        return None
+    weather_data = weather_response.json()
+    return format_weather_data(weather_data, icons_mapping)
 
 def format_weather_data(weather_data: dict, icons_mapping: dict) -> str:
+    # Фильтрация данных для утреннего, дневного и вечернего времени
+    morning_data = next(item for item in weather_data['list'] if '09:00:00' in item['dt_txt'])
+    day_data = next(item for item in weather_data['list'] if '12:00:00' in item['dt_txt'])
+    evening_data = next(item for item in weather_data['list'] if '18:00:00' in item['dt_txt'])
+
+    # Форматирование данных
+    morning_weather = format_single_weather(morning_data, icons_mapping, "Утро")
+    day_weather = format_single_weather(day_data, icons_mapping, "День")
+    evening_weather = format_single_weather(evening_data, icons_mapping, "Вечер")
+
+    return f"{morning_weather}\n{day_weather}\n{evening_weather}"
+
+def format_single_weather(weather_data: dict, icons_mapping: dict, time_of_day: str) -> str:
     description = weather_data["weather"][0]["description"]
     icon_code = weather_data["weather"][0]["icon"]
     temperature = weather_data["main"]["temp"]
-    feels_like = weather_data["main"]["feels_like"]
     humidity = weather_data["main"]["humidity"]
-    wind_speed = weather_data["wind"]["speed"]
-    pressure = weather_data["main"]["pressure"] * 0.75  # Convert pressure to mmHg
     weather_icon = icons_mapping.get(icon_code, "?")
-
-    return f"""
-Сейчас в городе {weather_data['name']}:
-
-{weather_icon} {description}
-
-🌡️ Температура воздуха — {temperature:.2f}°C
-👀 Чувствуется как — {feels_like:.1f}°C
-💦 Влажность — {humidity}%
-💨 Ветер — {wind_speed} м/с
-📍 Атмосферное давление — {pressure:.0f} мм рт.ст.
-    """
-
+    return f"{time_of_day}: {weather_icon} {description}, 🌡:{temperature:.2f}°C, 💦: {humidity}%"
 
 def generate_image(weather_info: str):
     """
@@ -57,7 +51,6 @@ def generate_image(weather_info: str):
     draw = ImageDraw.Draw(image)
 
     font = ImageFont.truetype("Symbola.ttf", 18)
-    font_size = 16
 
     weather_lines = weather_info.split("\n")
     for weather_line in weather_lines:
