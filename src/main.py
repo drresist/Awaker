@@ -8,7 +8,7 @@ import requests
 import telebot
 from loguru import logger
 
-from giga_srv import get_hokku
+# from giga_srv import get_hokku
 from holidays import get_holidays
 from utils import initialize_config
 from weather import get_weather, generate_image
@@ -125,9 +125,10 @@ def create_message() -> str:
         holidays := get_holidays(config.HOLIDAYS_URL)) else ""
 
     additional_content = ""
-    if config.GIGA_TOGGLE:
-        additional_content = f"\n*{get_hokku()}*"
-    elif config.JOKE_TOGGLE:
+    # if config.GIGA_TOGGLE:
+    #     # additional_content = f"\n*{get_hokku()}*"
+        
+    if config.JOKE_TOGGLE:
         additional_content = f"\n*{get_joke()}*"
 
     return f"*Всем привет!👋*\n {weather}\n {birthday}\n {holidays}{additional_content}\n"
