@@ -2,6 +2,11 @@ import requests
 from datetime import datetime
 import time
 
+from src.utils import config_logger
+
+
+log = config_logger()
+
 def get_weather_emoji(description):
     """Return an appropriate emoji for the weather description."""
     description = description.lower()
@@ -37,16 +42,16 @@ def process_weather_data(data, city):
     current_temp = f"{current['temp_C']}°C"
     current_desc = current['lang_ru'][0]['value']
     current_emoji = get_weather_emoji(current_desc)
-    message += f"Сейчас:\n {current_emoji} {current_desc}\n 🌡️ Температура: {current_temp}\n\n"
+    # message += f"Сейчас:\n {current_emoji} {current_desc}\n 🌡️ Температура: {current_temp}\n\n"
 
     # Forecast for the day
     for period, hour in [("Утро", "9"), ("День", "15"), ("Вечер", "21")]:
         for forecast in forecasts:
-            if forecast['time'] == hour:
+            if forecast['time'] == hour + "00":
                 temp = f"{forecast['tempC']}°C"
                 desc = forecast['lang_ru'][0]['value']
                 emoji = get_weather_emoji(desc)
-                message += f"{period}:\n {emoji} {desc}\n 🌡️ Температура: {temp}\n\n"
+                message += f"{period}: {emoji} {desc} 🌡️ Температура: {temp}\n"
                 break
 
     return message.strip()
