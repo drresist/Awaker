@@ -43,7 +43,7 @@ def get_birthdays_db() :
 
 @log_error_and_continue
 def create_message() -> str:
-    weather = get_today_weather("Moscow") or "Ошибка при получении погоды."
+    weather = get_today_weather("Москва") or "Ошибка при получении погоды."
     birthday = get_birthdays_db() or ""
     return f"*Всем привет!👋*\n{weather}\n{birthday}\n"
 
