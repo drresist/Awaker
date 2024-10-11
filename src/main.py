@@ -25,8 +25,7 @@ def log_error_and_continue(func):
 
 def gen_markup():
     markup = InlineKeyboardMarkup()
-    markup.row_width = 2
-    markup.add(InlineKeyboardButton("Yes", callback_data="cb_awake"))
+    markup.add(InlineKeyboardButton("Я проснулся!", callback_data="cb_awake"))
     return markup
 
 
