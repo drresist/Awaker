@@ -43,7 +43,7 @@ async def send_periodic_message(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a periodic message."""
     message = create_message()
     logging.info("send periodic message")
-    await context.bot.send_message(chat_id=config.CHAT_ID, text=message)
+    await context.bot.send_message(chat_id=config.CHAT_ID, text=message, disable_notification=True)
 
 async def test_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
