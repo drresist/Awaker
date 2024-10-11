@@ -8,44 +8,24 @@ from src.utils import config_logger
 
 log = config_logger()
 
-# Step 1: Update imports and add OpenWeather API key
-OPENWEATHER_API_KEY = os.environ.get('OW_API')
-if not OPENWEATHER_API_KEY:
-    raise ValueError("OpenWeather API key not found in environment variables")
-
-def get_weather_emoji(description):
-    """Return an appropriate emoji for the weather description."""
-    description = description.lower()
-    if "clear" in description:
-        return "☀️"
-    elif "cloud" in description:
-        return "☁️"
-    elif "rain" in description:
-        return "🌧️"
-    elif "snow" in description:
-        return "❄️"
-    elif "thunderstorm" in description:
-        return "⛈️"
-    else:
-        return "🌤️"
-
 def fetch_weather_data(city):
-    """Fetch weather data from OpenWeather API."""
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=metric&lang=ru"
-    response = requests.get(url)
+    """Fetch weather data from wttr.in API."""
+    url = f"https://wttr.in/{city}?format=%c+%C+%t&lang=ru"
+    response = requests.get(url, timeout=5)
     response.raise_for_status()
-    return response.json()
+    return response.text.strip()
 
 def process_weather_data(data, city):
     """Process the weather data and create a simplified formatted message in Russian."""
-    current_temp = round(data['main']['temp'])
-    current_desc = data['weather'][0]['description']
-    current_emoji = get_weather_emoji(data['weather'][0]['main'])
+    weather_info = data.split(" ")
+    current_emoji = weather_info[0]
+    current_desc = " ".join(weather_info[1:-1])
+    current_temp = weather_info[-1]
 
     locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
     message = f"🌍 Погода в {city} - {datetime.now().strftime('%d %B %Y')}\n"
     message += f"{current_emoji} {current_desc.capitalize()}\n"
-    message += f"🌡️ Температура: {current_temp}°C"
+    message += f"🌡️ Температура: {current_temp}"
 
     return message.strip()
 
@@ -57,9 +37,9 @@ def get_today_weather(city, max_retries=3, retry_delay=5):
             return process_weather_data(data, city)
         except requests.exceptions.RequestException as e:
             if attempt < max_retries - 1:
-                log.warning(f"Попытка {attempt + 1} не удалась. Повторная попытка через {retry_delay} секунд...")
+                print(f"Попытка {attempt + 1} не удалась. Повторная попытка через {retry_delay} секунд...")
                 time.sleep(retry_delay)
             else:
                 return f"❌ Ошибка получения данных о погоде после {max_retries} попыток: {e}"
-        except (KeyError, IndexError) as e:
+        except (IndexError, ValueError) as e:
             return f"❌ Ошибка обработки данных о погоде: {e}"
