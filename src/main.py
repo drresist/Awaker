@@ -6,6 +6,7 @@ import psycopg2
 import requests
 import telebot
 from loguru import logger
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 import config
 
 from src.weather import get_today_weather
@@ -21,6 +22,12 @@ def log_error_and_continue(func):
             logger.error(f"Произошла ошибка: {e}")
             return None
     return wrapper
+
+def gen_markup():
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("Я проснулся!", callback_data="cb_awake"))
+    return markup
+
 
 @log_error_and_continue
 def get_birthdays_db() :
@@ -50,11 +57,13 @@ def create_message() -> str:
 def send_message(text: str) -> None:
     bot = telebot.TeleBot(token=config.TG_BOT_API)
     logger.info(f"Отправка сообщения: {text}")
+    button = gen_markup()
     bot.send_message(
         text=text,
         chat_id=config.CHAT_ID,
         disable_notification=True,
         parse_mode="markdown",
+        reply_markup=button
     )
 
 def parse_arguments() -> argparse.Namespace:
