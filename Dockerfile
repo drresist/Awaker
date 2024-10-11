@@ -1,11 +1,10 @@
-FROM python:3.11-slim-buster
-LABEL authors="maximfesenko"
-
+FROM python:3.12-slim
 
 WORKDIR /app
-COPY . .
 
-RUN make install-requirements
+COPY . /app
 
+# Install any needed dependencies specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["python3", "src/main.py"]
+CMD ["python", "-m" , "src.main"]

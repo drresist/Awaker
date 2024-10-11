@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OW_API = os.getenv("OW_API")
+# OW_API = os.getenv("OW_API")
 TG_BOT_API = os.getenv("TG_BOT_API", "None")
 CHAT_ID = os.getenv("CHAT_ID", "None")
 PG_HOST = os.getenv("PG_HOST")
