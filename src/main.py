@@ -5,6 +5,7 @@ import config
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+import pytz
 from src.weather import get_today_weather
 
 logging.basicConfig(
@@ -42,7 +43,7 @@ async def send_periodic_message(context: ContextTypes.DEFAULT_TYPE) -> None:
     message = create_message()
     logging.info("send periodic message")
     await context.bot.send_message(
-        chat_id=config.CHAT_ID, text=message, disable_notification=True
+        chat_id=config.CHAT_ID, text=message, disable_notification=True, parse_mode="Markdown"
     )
 
 
@@ -59,7 +60,7 @@ def main() -> None:
 
     job_queue = application.job_queue
     job_daily = job_queue.run_daily(
-        send_periodic_message, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(hour=8)
+        send_periodic_message, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(hour=19, minute=31, tzinfo=pytz.timezone('Europe/Moscow'))
     )
     application.add_handler(CommandHandler("test", test_message))
 

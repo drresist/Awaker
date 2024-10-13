@@ -7,4 +7,4 @@ COPY . /app
 # Install any needed dependencies specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "-m" , "src.main"]
+CMD ["python", "-m", "src.main"]
