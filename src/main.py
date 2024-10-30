@@ -68,7 +68,7 @@ def main() -> None:
     job_queue.run_daily(
         send_periodic_message,
         days=(0, 1, 2, 3, 4, 5, 6),
-        time=datetime.time(hour=8, minute=00, tzinfo=pytz.timezone("Europe/Moscow")),
+        time=datetime.time(hour=8,  tzinfo=pytz.timezone("Europe/Moscow")),
     )
     application.add_handler(CommandHandler("test", test_message))
 

@@ -24,7 +24,7 @@ def process_weather_data(data, city):
     current_temp = weather_info[-1]
 
     locale.setlocale(locale.LC_TIME, "ru_RU.UTF-8")
-    message = f"🌍 Погода в {city} - {datetime.now().strftime('%d %B %Y')}\n"
+    message = f"🌍 Погода в Москве: \n"
     message += f"{current_emoji} {current_desc.capitalize()}\n"
     message += f"🌡️ Температура: {current_temp}"
 
