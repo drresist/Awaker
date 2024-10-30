@@ -15,9 +15,11 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-@app.route('/healthz', methods=['GET'])
+
+@app.route("/healthz", methods=["GET"])
 def health_check():
     return jsonify({"status": "ok"}), 200
+
 
 def get_birthdays_db():
     with sqlite3.connect("birthday.db") as conn:
@@ -66,7 +68,7 @@ def main() -> None:
     job_queue.run_daily(
         send_periodic_message,
         days=(0, 1, 2, 3, 4, 5, 6),
-        time=datetime.time(hour=19, minute=31, tzinfo=pytz.timezone("Europe/Moscow")),
+        time=datetime.time(hour=8, minute=00, tzinfo=pytz.timezone("Europe/Moscow")),
     )
     application.add_handler(CommandHandler("test", test_message))
 
@@ -76,6 +78,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     from threading import Thread
-    flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=8080))
+
+    flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=4000))
     flask_thread.start()
     main()
