@@ -1,12 +1,12 @@
 import datetime
-import psycopg2
+import sqlite3
 import logging
 import config
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 import pytz
-from src.weather import get_today_weather
+from weather import get_today_weather
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -14,16 +14,11 @@ logging.basicConfig(
 
 
 def get_birthdays_db():
-    with psycopg2.connect(
-        host=config.PG_HOST,
-        database=config.PG_DB,
-        user=config.PG_USER,
-        password=config.PG_PASS,
-    ) as conn:
-        with conn.cursor() as cursor:
-            today_date = datetime.datetime.now().strftime("%d-%m")
-            cursor.execute("SELECT name FROM birthdays WHERE date = %s", (today_date,))
-            birthdays = cursor.fetchall()
+    with sqlite3.connect("birthday.db") as conn:
+        cursor = conn.cursor()
+        today_date = datetime.datetime.now().strftime("%d-%m")
+        cursor.execute("SELECT name FROM birthdays WHERE date = ?", (today_date,))
+        birthdays = cursor.fetchall()
 
     if not birthdays:
         return None
@@ -43,7 +38,10 @@ async def send_periodic_message(context: ContextTypes.DEFAULT_TYPE) -> None:
     message = create_message()
     logging.info("send periodic message")
     await context.bot.send_message(
-        chat_id=config.CHAT_ID, text=message, disable_notification=True, parse_mode="Markdown"
+        chat_id=config.CHAT_ID,
+        text=message,
+        disable_notification=True,
+        parse_mode="Markdown",
     )
 
 
@@ -60,7 +58,9 @@ def main() -> None:
 
     job_queue = application.job_queue
     job_daily = job_queue.run_daily(
-        send_periodic_message, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(hour=19, minute=31, tzinfo=pytz.timezone('Europe/Moscow'))
+        send_periodic_message,
+        days=(0, 1, 2, 3, 4, 5, 6),
+        time=datetime.time(hour=19, minute=31, tzinfo=pytz.timezone("Europe/Moscow")),
     )
     application.add_handler(CommandHandler("test", test_message))
 

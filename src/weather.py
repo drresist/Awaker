@@ -3,7 +3,7 @@ from datetime import datetime
 import time
 import locale
 
-from src.utils import config_logger
+from utils import config_logger
 
 log = config_logger()
 
