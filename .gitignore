@@ -14,3 +14,4 @@ logs/debug.log
 weather.png
 src/__pycache__/*
 .ruff_cache/
+__pycache__/
