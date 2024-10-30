@@ -10,4 +10,4 @@ def config_logger():
     # set higher logging level for httpx to avoid all GET and POST requests being logged
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
-    logger = logging.getLogger(__name__)
+    logging.getLogger(__name__)

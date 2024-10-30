@@ -63,7 +63,7 @@ def main() -> None:
     application = Application.builder().token(config.TG_BOT_API).build()
 
     job_queue = application.job_queue
-    job_daily = job_queue.run_daily(
+    job_queue.run_daily(
         send_periodic_message,
         days=(0, 1, 2, 3, 4, 5, 6),
         time=datetime.time(hour=19, minute=31, tzinfo=pytz.timezone("Europe/Moscow")),
