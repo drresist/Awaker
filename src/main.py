@@ -4,14 +4,20 @@ import logging
 import config
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+from flask import Flask, jsonify
 
 import pytz
 from weather import get_today_weather
+
+app = Flask(__name__)
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
+@app.route('/healthz', methods=['GET'])
+def health_check():
+    return jsonify({"status": "ok"}), 200
 
 def get_birthdays_db():
     with sqlite3.connect("birthday.db") as conn:
@@ -69,4 +75,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    from threading import Thread
+    flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=8080))
+    flask_thread.start()
     main()
